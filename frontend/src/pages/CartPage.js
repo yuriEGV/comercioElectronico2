@@ -1,26 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { getCartKey, readCart, writeCart } from '../utils/cart';
 
-const getCart = () => {
-  try {
-    return JSON.parse(localStorage.getItem('cart')) || [];
-  } catch {
-    return [];
-  }
-};
-
-const setCart = (cart) => {
-  localStorage.setItem('cart', JSON.stringify(cart));
-};
-
-const CartPage = () => {
-  const [cart, setCartState] = useState(getCart());
+const CartPage = ({ user }) => {
+  const cartKey = useMemo(() => getCartKey(user), [user]);
+  const [cart, setCartState] = useState(() => readCart(cartKey));
 
   useEffect(() => {
-    setCartState(getCart());
-  }, []);
+    setCartState(readCart(cartKey));
+  }, [cartKey]);
 
   const updateCart = (newCart) => {
-    setCart(newCart);
+    writeCart(cartKey, newCart);
     setCartState([...newCart]);
   };
 

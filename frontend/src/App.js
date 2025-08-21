@@ -44,10 +44,10 @@ function App() {
     <Router>
       <Navbar user={user} onLogout={handleLogout} />
       <Routes>
-        <Route path="/" element={<ProductsPage />} />
+        <Route path="/" element={<ProductsPage user={user} />} />
         <Route path="/login" element={<LoginPage setUser={setUser} />} />
         <Route path="/register" element={<RegisterPage setUser={setUser} />} />
-        <Route path="/cart" element={<CartPage />} />
+        <Route path="/cart" element={<CartPage user={user} />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>

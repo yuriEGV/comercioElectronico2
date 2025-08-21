@@ -1,22 +1,50 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../api';
 
-function addToCart(product) {
-  const cart = JSON.parse(localStorage.getItem('cart')) || [];
+function getGuestId() {
+  let gid = localStorage.getItem('guestId');
+  if (!gid) {
+    gid = Math.random().toString(36).slice(2);
+    localStorage.setItem('guestId', gid);
+  }
+  return gid;
+}
+
+function getCartKey(user) {
+  if (user && user.userId) return `cart:${user.userId}`;
+  return `cart:guest:${getGuestId()}`;
+}
+
+function readCart(cartKey) {
+  try {
+    return JSON.parse(localStorage.getItem(cartKey)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCart(cartKey, cart) {
+  localStorage.setItem(cartKey, JSON.stringify(cart));
+}
+
+function addToCart(cartKey, product) {
+  const cart = readCart(cartKey);
   const idx = cart.findIndex(item => item._id === product._id);
   if (idx > -1) {
     cart[idx].qty += 1;
   } else {
     cart.push({ ...product, qty: 1 });
   }
-  localStorage.setItem('cart', JSON.stringify(cart));
+  writeCart(cartKey, cart);
 }
 
-const ProductsPage = () => {
+const ProductsPage = ({ user }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [added, setAdded] = useState(null);
+
+  const cartKey = useMemo(() => getCartKey(user), [user]);
 
   useEffect(() => {
     apiFetch('/products')
@@ -31,7 +59,7 @@ const ProductsPage = () => {
   }, []);
 
   const handleAdd = (product) => {
-    addToCart(product);
+    addToCart(cartKey, product);
     setAdded(product._id);
     setTimeout(() => setAdded(null), 1000);
   };

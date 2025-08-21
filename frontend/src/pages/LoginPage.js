@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../api';
+import { migrateGuestCartToUser } from '../utils/cart';
 
 const LoginPage = ({ setUser }) => {
   const navigate = useNavigate();
@@ -33,6 +34,8 @@ const LoginPage = ({ setUser }) => {
 
       console.log('Login exitoso:', data.user);
       setUser(data.user);
+      // migrar carrito invitado al del usuario
+      migrateGuestCartToUser(data.user);
       navigate('/');
     } catch (error) {
       console.error('Error en login:', error);
