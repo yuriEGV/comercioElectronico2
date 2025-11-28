@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getCartKey, readCart, writeCart } from '../utils/cart';
 
 const CartPage = ({ user }) => {
@@ -22,15 +23,43 @@ const CartPage = ({ user }) => {
   };
 
   const handleRemove = (id) => {
+    const candidate = cart.find(it => it._id === id);
+    if (!candidate) return;
+    const ok = window.confirm(`¿Eliminar ${candidate.name} del carrito?`);
+    if (!ok) return;
     const newCart = cart.filter(item => item._id !== id);
     updateCart(newCart);
   };
 
   const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
+  const [confirmingEmpty, setConfirmingEmpty] = useState(false);
+
+  const navigate = useNavigate();
+
+  const goToCheckout = () => navigate('/checkout');
+
+  const emptyCart = () => {
+    if (!cart.length) return;
+    const ok = window.confirm('¿Vaciar todo el carrito? Esta acción no se puede deshacer.');
+    if (!ok) return;
+    setConfirmingEmpty(true);
+    writeCart(cartKey, []);
+    setCartState([]);
+    setTimeout(() => setConfirmingEmpty(false), 500);
+  };
+
   return (
     <div>
       <h1>Carrito</h1>
+      <div style={{ marginBottom: 12 }}>
+        <button onClick={goToCheckout} disabled={cart.length === 0} style={{ marginRight: 8 }}>
+          Ir a Checkout
+        </button>
+        <button onClick={emptyCart} disabled={cart.length === 0}>
+          Vaciar carrito
+        </button>
+      </div>
       {cart.length === 0 ? (
         <p>Tu carrito está vacío.</p>
       ) : (
@@ -46,6 +75,9 @@ const CartPage = ({ user }) => {
             ))}
           </ul>
           <h3>Total: ${total}</h3>
+          <div style={{ marginTop: 10 }}>
+            <button onClick={goToCheckout} disabled={cart.length === 0}>Comprar</button>
+          </div>
         </div>
       )}
     </div>

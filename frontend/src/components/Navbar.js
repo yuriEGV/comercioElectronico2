@@ -1,12 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { getCartKey, getCartCount } from '../utils/cart';
 
 const Navbar = ({ user, onLogout }) => {
   const navigate = useNavigate();
+  const [cartCount, setCartCount] = useState(0);
 
-  const handleLogout = () => {
-    onLogout();
-    navigate('/');
+  useEffect(() => {
+    const key = getCartKey(user);
+    setCartCount(getCartCount(key));
+
+    const onCartUpdated = (e) => setCartCount(getCartCount(key));
+    window.addEventListener('cartUpdated', onCartUpdated);
+    return () => window.removeEventListener('cartUpdated', onCartUpdated);
+  }, [user]);
+
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setLoggingOut(true);
+      await onLogout();
+    } finally {
+      setLoggingOut(false);
+      navigate('/');
+    }
   };
 
   return (
@@ -21,27 +39,40 @@ const Navbar = ({ user, onLogout }) => {
       <Link to="/" style={{ textDecoration: 'none', color: '#007bff', fontWeight: 'bold' }}>
         Productos
       </Link>
-      <Link to="/cart" style={{ textDecoration: 'none', color: '#007bff' }}>
+      <Link to="/cart" style={{ textDecoration: 'none', color: '#007bff', position: 'relative' }}>
         Carrito
+        <span style={{
+          display: 'inline-block',
+          marginLeft: 6,
+          background: '#007bff',
+          color: 'white',
+          padding: '2px 8px',
+          borderRadius: 12,
+          fontSize: 12
+        }}>{cartCount}</span>
       </Link>
       <div style={{ flex: 1 }} />
       {user ? (
         <>
+          <Link to="/dashboard" style={{ textDecoration: 'none', color: '#333', marginRight: '1rem' }}>
+            Dashboard
+          </Link>
           <span style={{ color: '#28a745', fontWeight: 'bold' }}>
             Hola, {user.name}
           </span>
           <button 
             onClick={handleLogout}
+            disabled={loggingOut}
             style={{
               padding: '0.5rem 1rem',
-              backgroundColor: '#dc3545',
+              backgroundColor: loggingOut ? '#c82333' : '#dc3545',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: 'pointer'
+              cursor: loggingOut ? 'not-allowed' : 'pointer'
             }}
           >
-            Logout
+            {loggingOut ? 'Cerrando...' : 'Logout'}
           </button>
         </>
       ) : (

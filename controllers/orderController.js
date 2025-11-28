@@ -1,71 +1,97 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const Stripe = require('stripe');
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const { StatusCodes } = require('http-status-codes');
 const CustomError = require('../errors');
 const { checkPermissions } = require('../utils');
 
-const fakeStripeAPI = async ({ amount, currency }) => {
-  const client_secret = 'someRandomValue';
-  return { client_secret, amount };
-};
-
 const createOrder = async (req, res) => {
-  const { items: cartItems, tax, shippingFee } = req.body;
+  const { items, shipping = 0, currency = 'clp' } = req.body;
 
-  if (!cartItems || cartItems.length < 1) {
-    throw new CustomError.BadRequestError('No cart items provided');
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    throw new CustomError.BadRequestError('No items provided');
   }
-  if (!tax || !shippingFee) {
-    throw new CustomError.BadRequestError(
-      'Please provide tax and shipping fee'
-    );
-  }
+
+  // Validate items and build orderItems using authoritative product data
+  const zeroDecimalCurrencies = [
+    'bif','clp','djf','gnf','jpy','kmf','krw','mga','pyg','rwf','vnd','vuv','xaf','xof','xpf'
+  ];
+
+  const amountToStripe = (amount, currency) => {
+    // For zero-decimal currencies pass integer amount, otherwise pass cents
+    const lower = (currency || 'clp').toLowerCase();
+    if (zeroDecimalCurrencies.includes(lower)) return Math.round(amount);
+    return Math.round(amount * 100); // e.g. USD -> cents
+  };
 
   let orderItems = [];
   let subtotal = 0;
 
-  for (const item of cartItems) {
-    const dbProduct = await Product.findOne({ _id: item.product });
-    if (!dbProduct) {
-      throw new CustomError.NotFoundError(
-        `No product with id : ${item.product}`
+  for (const it of items) {
+    if (!it.quantity || !it.productId) {
+      throw new CustomError.BadRequestError(
+        'Each item must include productId and quantity'
       );
     }
-    const { name, price, image, _id } = dbProduct;
+
+    const dbProduct = await Product.findById(it.productId);
+    if (!dbProduct) {
+      throw new CustomError.NotFoundError(`No product with id : ${it.productId}`);
+    }
+
+    if (dbProduct.inventory < it.quantity) {
+      throw new CustomError.BadRequestError(
+        `Not enough inventory for product ${dbProduct._id}. Available: ${dbProduct.inventory}, requested: ${it.quantity}`
+      );
+    }
+
     const singleOrderItem = {
-      amount: item.amount,
-      name,
-      price,
-      image,
-      product: _id,
+      productId: dbProduct._id,
+      name: dbProduct.name,
+      price: dbProduct.price,
+      quantity: it.quantity,
     };
-    // add item to order
-    orderItems = [...orderItems, singleOrderItem];
-    // calculate subtotal
-    subtotal += item.amount * price;
+
+    // update inventory (simple decrement) and save
+    dbProduct.inventory = dbProduct.inventory - it.quantity;
+    await dbProduct.save();
+
+    orderItems.push(singleOrderItem);
+    subtotal += dbProduct.price * it.quantity; // enforce DB price
   }
-  // calculate total
-  const total = tax + shippingFee + subtotal;
-  // get client secret
-  const paymentIntent = await fakeStripeAPI({
-    amount: total,
-    currency: 'usd',
-  });
+  const total = subtotal + Number(shipping || 0);
 
+  // create order in DB with pending payment status
   const order = await Order.create({
-    orderItems,
-    total,
+    user: req.user?.userId || null,
+    items: orderItems,
     subtotal,
-    tax,
-    shippingFee,
-    clientSecret: paymentIntent.client_secret,
-    user: req.user.userId,
+    shipping,
+    total,
+    currency,
+    paymentStatus: 'pending',
   });
 
-  res
-    .status(StatusCodes.CREATED)
-    .json({ order, clientSecret: order.clientSecret });
+  // create a PaymentIntent in Stripe
+  const stripeAmount = amountToStripe(total, currency);
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: stripeAmount,
+    currency,
+    automatic_payment_methods: { enabled: true },
+    metadata: { orderId: order._id.toString() },
+  });
+
+  order.paymentIntentId = paymentIntent.id;
+  order.paymentStatus = paymentIntent.status;
+  await order.save();
+
+  res.status(StatusCodes.CREATED).json({
+    orderId: order._id,
+    clientSecret: paymentIntent.client_secret,
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+  });
 };
 const getAllOrders = async (req, res) => {
   const orders = await Order.find({});
@@ -94,8 +120,8 @@ const updateOrder = async (req, res) => {
   }
   checkPermissions(req.user, order.user);
 
-  order.paymentIntentId = paymentIntentId;
-  order.status = 'paid';
+  order.paymentIntentId = paymentIntentId || order.paymentIntentId;
+  order.paymentStatus = 'paid';
   await order.save();
 
   res.status(StatusCodes.OK).json({ order });

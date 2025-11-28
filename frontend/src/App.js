@@ -8,6 +8,10 @@ import NotFoundPage from './pages/NotFoundPage';
 import CartPage from './pages/CartPage';
 import Navbar from './components/Navbar';
 import { apiFetch } from './api';
+import { getCartKey, writeCart } from './utils/cart';
+import CheckoutPage from './pages/CheckoutPage';
+import Success from './pages/Success';
+import Dashboard from './pages/Dashboard';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -32,7 +36,17 @@ function App() {
     } catch (error) {
       console.log('Logout error:', error);
     } finally {
+      // clear the user's cart (if any) when logging out and switch to guest
+      try {
+        const key = getCartKey(user);
+        writeCart(key, []);
+        window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cartKey: key } }));
+      } catch (err) {
+        // ignore
+      }
       setUser(null);
+      // redirect to home for clarity
+      window.location.assign('/');
     }
   };
 
@@ -48,6 +62,9 @@ function App() {
         <Route path="/login" element={<LoginPage setUser={setUser} />} />
         <Route path="/register" element={<RegisterPage setUser={setUser} />} />
         <Route path="/cart" element={<CartPage user={user} />} />
+        <Route path="/checkout" element={<CheckoutPage user={user} />} />
+        <Route path="/success" element={<Success user={user} />} />
+        <Route path="/dashboard" element={<Dashboard user={user} />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>
