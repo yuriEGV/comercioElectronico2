@@ -1,3 +1,6 @@
+const mongoose = require('mongoose');
+mongoose.set('strictQuery', true); // o false, según prefieras
+
 require('dotenv').config();
 require('express-async-errors');
 

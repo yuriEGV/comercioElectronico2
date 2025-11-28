@@ -13,29 +13,14 @@ jest.mock('../utils/cart', () => ({
   ])
 }));
 
-// mock stripe libs
-jest.mock('@stripe/stripe-js', () => ({
-  loadStripe: jest.fn(() => Promise.resolve({ mock: true })),
-}));
-
-jest.mock('@stripe/react-stripe-js', () => {
-  // require React INSIDE the factory so jest hoisting doesn't try to read an out-of-scope variable
-  const React = require('react');
-  const confirmCardPayment = jest.fn(() => Promise.resolve({ paymentIntent: { id: 'pi_123', status: 'succeeded' } }));
-  return {
-    Elements: ({ children }) => React.createElement('div', { 'data-testid': 'elements-wrapper' }, children),
-    CardElement: () => React.createElement('div', { 'data-testid': 'card-element' }),
-    useStripe: () => ({ confirmCardPayment }),
-    useElements: () => ({ getElement: () => ({}) }),
-  };
-});
+// stripe removed; no stripe mocks required for Webpay/Onepay tests
 
 import { apiFetch } from '../api';
 import CheckoutPage from '../pages/CheckoutPage';
 import { MemoryRouter } from 'react-router-dom';
 
 test('start checkout creates an order and shows payment form', async () => {
-  apiFetch.mockResolvedValueOnce({ orderId: 'order123', clientSecret: 'cs_123', publishableKey: 'pk_test' });
+  apiFetch.mockResolvedValueOnce({ orderId: 'order123' });
 
   render(
     <MemoryRouter>
@@ -50,16 +35,18 @@ test('start checkout creates an order and shows payment form', async () => {
 
   await waitFor(() => expect(apiFetch).toHaveBeenCalled());
 
-  // after creating order, the Elements wrapper and CardElement should render
-  expect(await screen.findByTestId('elements-wrapper')).toBeInTheDocument();
-  expect(screen.getByTestId('card-element')).toBeInTheDocument();
+  // after creating order, payment buttons should appear
+  expect(await screen.findByText(/Pagar con Webpay/i)).toBeInTheDocument();
+  expect(screen.getByText(/Pagar con Onepay/i)).toBeInTheDocument();
 });
 
 test('completing payment calls patch and navigates to success', async () => {
   // first call (create order)
-  apiFetch.mockResolvedValueOnce({ orderId: 'order456', clientSecret: 'cs_456', publishableKey: 'pk_test' });
-  // second call (patch) -- when updating order
-  apiFetch.mockResolvedValueOnce({});
+  apiFetch.mockResolvedValueOnce({ orderId: 'order456' });
+  // second call (onepay/init)
+  apiFetch.mockResolvedValueOnce({ reference: 'ref_1', qrImage: 'data:image/png;base64,dummypng' });
+  // third call (onepay/commit)
+  apiFetch.mockResolvedValueOnce({ success: true });
 
   const { container } = render(
     <MemoryRouter>
@@ -71,13 +58,17 @@ test('completing payment calls patch and navigates to success', async () => {
   fireEvent.click(screen.getByText(/Pagar ahora/i));
   await waitFor(() => expect(apiFetch).toHaveBeenCalled());
 
-  // wait for payment UI
-  await screen.findByTestId('card-element');
+  // wait for Onepay button
+  await screen.findByText(/Pagar con Onepay/i);
 
-  // submit payment
-  const payNow = screen.getByText(/Pagar/i);
-  fireEvent.click(payNow);
+  // click Onepay
+  fireEvent.click(screen.getByText(/Pagar con Onepay/i));
 
-  // PATCH should be called (update order)
-  await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(2));
+  // QR should be shown
+  await screen.findByAltText('QR Onepay');
+
+  // confirm payment
+  fireEvent.click(screen.getByText(/Confirmar pago/i));
+
+  await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(3));
 });

@@ -1,7 +1,5 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
-const Stripe = require('stripe');
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const { StatusCodes } = require('http-status-codes');
 const CustomError = require('../errors');
@@ -74,23 +72,12 @@ const createOrder = async (req, res) => {
     paymentStatus: 'pending',
   });
 
-  // create a PaymentIntent in Stripe
-  const stripeAmount = amountToStripe(total, currency);
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: stripeAmount,
-    currency,
-    automatic_payment_methods: { enabled: true },
-    metadata: { orderId: order._id.toString() },
-  });
-
-  order.paymentIntentId = paymentIntent.id;
-  order.paymentStatus = paymentIntent.status;
-  await order.save();
-
+  // return the order and totals; payment will be initiated with Webpay/Onepay
   res.status(StatusCodes.CREATED).json({
     orderId: order._id,
-    clientSecret: paymentIntent.client_secret,
-    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    total: order.total,
+    currency: order.currency,
+    message: 'Order created. Proceed to payment.'
   });
 };
 const getAllOrders = async (req, res) => {
@@ -112,7 +99,7 @@ const getCurrentUserOrders = async (req, res) => {
 };
 const updateOrder = async (req, res) => {
   const { id: orderId } = req.params;
-  const { paymentIntentId } = req.body;
+  const { paymentIntentId, transactionId, method } = req.body;
 
   const order = await Order.findOne({ _id: orderId });
   if (!order) {
@@ -120,7 +107,10 @@ const updateOrder = async (req, res) => {
   }
   checkPermissions(req.user, order.user);
 
-  order.paymentIntentId = paymentIntentId || order.paymentIntentId;
+  // support multiple payment confirmation fields
+  if (paymentIntentId) order.paymentIntentId = paymentIntentId;
+  if (transactionId) order.paymentIntentId = transactionId;
+  if (method) order.paymentMethod = method;
   order.paymentStatus = 'paid';
   await order.save();
 

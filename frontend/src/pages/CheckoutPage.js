@@ -1,76 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+// Webpay + Onepay flow — remove Stripe Elements and integrate with backend Webpay endpoints
 import { getCartKey, readCart } from '../utils/cart';
 import { apiFetch } from '../api';
 import { useNavigate } from 'react-router-dom';
 
-const PaymentForm = ({ clientSecret, orderId }) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const navigate = useNavigate();
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState(null);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setProcessing(true);
-    setError(null);
-
-    if (!stripe || !elements) {
-      setError('Stripe no está listo');
-      setProcessing(false);
-      return;
-    }
-
-    const card = elements.getElement(CardElement);
-    const result = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: { card },
-    });
-
-    if (result.error) {
-      setError(result.error.message);
-      setProcessing(false);
-      return;
-    }
-
-    // pago confirmado o requiere acciones; si succeeded entonces actualizar orden
-    const pi = result.paymentIntent;
-    if (pi && (pi.status === 'succeeded' || pi.status === 'requires_capture' || pi.status === 'processing')) {
-      try {
-        await apiFetch(`/orders/${orderId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ paymentIntentId: pi.id }),
-        });
-      } catch (err) {
-        // no fatal — webhook backend también actualizará
-        console.warn('No se pudo actualizar la orden localmente:', err.message || err);
-      }
-    }
-
-    // redirigir a pantalla de exito
-    navigate('/success');
-  };
-
-  return (
-    <form onSubmit={handleSubmit} style={{ maxWidth: 500 }}>
-      <div style={{ padding: 12, border: '1px solid #ddd', borderRadius: 6 }}>
-        <CardElement options={{ hidePostalCode: true }} />
-      </div>
-      {error && <div style={{ color: 'crimson', marginTop: 8 }}>{error}</div>}
-      <div style={{ marginTop: 12 }}>
-        <button disabled={!stripe || processing}>{processing ? 'Procesando...' : 'Pagar'}</button>
-      </div>
-    </form>
-  );
-};
+// No embedded card form — payments are handled via Webpay/Onepay flows
 
 const CheckoutPage = ({ user }) => {
   const cartKey = useMemo(() => getCartKey(user), [user]);
   const [cart, setCart] = useState(() => readCart(cartKey));
   const [status, setStatus] = useState('idle');
   const [orderInfo, setOrderInfo] = useState(null);
-  const [stripePromise, setStripePromise] = useState(null);
+  const [onepayInfo, setOnepayInfo] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -87,13 +28,9 @@ const CheckoutPage = ({ user }) => {
       const body = { items, shipping: 0, currency: 'usd' };
       const data = await apiFetch('/orders', { method: 'POST', body: JSON.stringify(body) });
 
-      // API devuelve orderId, clientSecret y publishableKey
-      const { orderId, clientSecret, publishableKey } = data;
-      setOrderInfo({ orderId, clientSecret });
-
-      // prepare Stripe
-      const stripe = loadStripe(publishableKey || process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
-      setStripePromise(stripe);
+      // API devuelve orderId y totals
+      const { orderId } = data;
+      setOrderInfo({ orderId });
       setStatus('ready');
     } catch (err) {
       setStatus('error');
@@ -137,12 +74,66 @@ const CheckoutPage = ({ user }) => {
         </div>
       )}
 
-      {status === 'ready' && orderInfo && stripePromise && (
+      {status === 'ready' && orderInfo && (
         <div style={{ marginTop: 20 }}>
-          <h3>Introduce datos de pago</h3>
-          <Elements stripe={stripePromise} options={{ clientSecret: orderInfo.clientSecret }}>
-            <PaymentForm clientSecret={orderInfo.clientSecret} orderId={orderInfo.orderId} />
-          </Elements>
+          <h3>Proceder al pago</h3>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <button onClick={async () => {
+              // Init Webpay Plus transaction
+              try {
+                const resp = await apiFetch('/payments/webpay/init', { method: 'POST', body: JSON.stringify({ amount: total, orderId: orderInfo.orderId }) });
+                // resp.url and resp.token
+                // create and submit form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = resp.url;
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'token_ws';
+                input.value = resp.token;
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+              } catch (err) {
+                console.error('Error iniciando Webpay:', err);
+                alert('No se pudo iniciar Webpay');
+              }
+            }}>
+              Pagar con Webpay (Plus)
+            </button>
+
+            <button onClick={async () => {
+              // Init Onepay QR
+              try {
+                const resp = await apiFetch('/payments/onepay/init', { method: 'POST', body: JSON.stringify({ amount: total, orderId: orderInfo.orderId }) });
+                setOnepayInfo(resp);
+              } catch (err) {
+                console.error('Error iniciando Onepay:', err);
+                alert('No se pudo iniciar Onepay');
+              }
+            }}>
+              Pagar con Onepay (QR)
+            </button>
+          </div>
+
+          {onepayInfo && (
+            <div style={{ marginTop: 16 }}>
+              <h4>Escanea el QR para pagar</h4>
+              <img src={onepayInfo.qrImage} alt="QR Onepay" style={{ maxWidth: 300 }} />
+              <div style={{ marginTop: 8 }}>
+                <button onClick={async () => {
+                  // Commit Onepay when user indicates payment done
+                  try {
+                    await apiFetch('/payments/onepay/commit', { method: 'POST', body: JSON.stringify({ reference: onepayInfo.reference }) });
+                    navigate('/success');
+                  } catch (err) {
+                    console.error('Error confirmando Onepay:', err);
+                    alert('No se pudo confirmar el pago');
+                  }
+                }}>Confirmar pago</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

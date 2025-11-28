@@ -1,12 +1,6 @@
 /* eslint-disable no-undef */
 
-// Mocks for modules used by the controller
-jest.mock('stripe', () => {
-  const createMock = jest.fn();
-  const Constructor = jest.fn(() => ({ paymentIntents: { create: createMock } }));
-  Constructor.__createMock = createMock;
-  return Constructor;
-});
+// No Stripe - tests focus on order creation and inventory checks
 
 const Product = require('../models/Product');
 const Order = require('../models/Order');
@@ -42,7 +36,7 @@ test('createOrder throws when requested quantity exceeds inventory', async () =>
   await expect(createOrder(req, res)).rejects.toThrow('Not enough inventory');
 });
 
-test('createOrder creates an order and calls Stripe with CLP (no cents)', async () => {
+test('createOrder creates an order and returns order id (CLP)', async () => {
   const dbProduct = {
     _id: 'prod1',
     name: 'Prod CLP',
@@ -59,8 +53,6 @@ test('createOrder creates an order and calls Stripe with CLP (no cents)', async 
   };
   Order.create = jest.fn().mockResolvedValue(mockOrder);
 
-  const Stripe = require('stripe');
-  Stripe.__createMock.mockResolvedValue({ id: 'pi_1', client_secret: 'cs_1', status: 'requires_payment_method' });
 
   const req = {
     body: {
@@ -79,13 +71,11 @@ test('createOrder creates an order and calls Stripe with CLP (no cents)', async 
   await createOrder(req, res);
 
   // subtotal: 1000 * 2 = 2000, total = 2000 + 500 = 2500
-  const stripeMock = require('stripe');
-  expect(stripeMock.__createMock).toHaveBeenCalledWith(expect.objectContaining({ amount: 2500, currency: 'clp' }));
   expect(res.status).toHaveBeenCalled();
-  expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ orderId: mockOrder._id, clientSecret: 'cs_1' }));
+  expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ orderId: mockOrder._id, total: 2500 }));
 });
 
-test('createOrder converts to cents for USD currencies', async () => {
+test('createOrder creates an order and returns order id (USD)', async () => {
   const dbProduct = {
     _id: 'prod2',
     name: 'Prod USD',
@@ -102,8 +92,6 @@ test('createOrder converts to cents for USD currencies', async () => {
   };
   Order.create = jest.fn().mockResolvedValue(mockOrder);
 
-  const Stripe = require('stripe');
-  Stripe.__createMock.mockResolvedValue({ id: 'pi_2', client_secret: 'cs_2', status: 'requires_payment_method' });
 
   const req = {
     body: {
@@ -121,9 +109,7 @@ test('createOrder converts to cents for USD currencies', async () => {
 
   await createOrder(req, res);
 
-  // subtotal 10.5, shipping 1.75 => total 12.25 => cents 1225
-  const stripeMock2 = require('stripe');
-  expect(stripeMock2.__createMock).toHaveBeenCalledWith(expect.objectContaining({ amount: 1225, currency: 'usd' }));
+  // subtotal 10.5, shipping 1.75 => total 12.25
   expect(res.status).toHaveBeenCalled();
-  expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ orderId: mockOrder._id, clientSecret: 'cs_2' }));
+  expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ orderId: mockOrder._id, total: 12.25 }));
 });
