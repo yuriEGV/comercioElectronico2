@@ -16,7 +16,7 @@ const start = async () => {
     // Iniciar servidor
     app.listen(port, () => {
       console.log(`🚀 Servidor ejecutándose en http://localhost:${port}`);
-      console.log(`📡 API disponible en http://localhost:${port}/api/v1`);
+      console.log(`📡 API disponible en http://localhost:${port}/`);
     });
   } catch (error) {
     console.error('❌ Error al iniciar el servidor:', error);

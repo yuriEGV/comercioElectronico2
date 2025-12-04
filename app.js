@@ -54,7 +54,7 @@ app.use(mongoSanitize());
 
 // ⚠️ STRIPE RAW WEBHOOK
 app.use(
-  '/api/v1/payments/webhook',
+  '/payments/webhook',
   express.raw({ type: 'application/json' }),
   paymentRouter
 );
