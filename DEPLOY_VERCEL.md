@@ -99,10 +99,12 @@ node_modules/
 
 4. **Configurar el proyecto:**
    - **Framework Preset:** Other
-   - **Root Directory:** `./` (raíz)
+   - **Root Directory:** `./` (raíz del proyecto - donde está app.js)
    - **Build Command:** (dejar vacío)
    - **Output Directory:** (dejar vacío)
    - **Install Command:** `npm install`
+   
+   ⚠️ **IMPORTANTE:** La raíz del directorio para el backend es la carpeta principal donde está `app.js`, `package.json` y `vercel.json` (la raíz del proyecto, NO la carpeta frontend)
 
 5. **Agregar Variables de Entorno:**
    - Click en "Environment Variables"
@@ -214,9 +216,11 @@ Agrega el script de build si no existe:
 
 3. **Configurar:**
    - **Framework Preset:** Create React App
-   - **Root Directory:** `frontend`
+   - **Root Directory:** `frontend` (carpeta frontend dentro del proyecto)
    - **Build Command:** `npm run build`
    - **Output Directory:** `build`
+   
+   ⚠️ **IMPORTANTE:** La raíz del directorio para el frontend es la carpeta `frontend/` dentro del proyecto (donde está el `package.json` del frontend y `vercel.json` del frontend)
 
 4. **Agregar Variable de Entorno:**
    - `REACT_APP_API_URL` → `https://tu-backend.vercel.app/api/v1`
