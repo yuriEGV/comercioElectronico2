@@ -66,12 +66,12 @@ app.use(express.static('./public'));
 app.use(fileUpload());
 
 // routes
-app.use('/api/v1/auth', authRouter);
-app.use('/api/v1/users', userRouter);
-app.use('/api/v1/products', productRouter);
-app.use('/api/v1/reviews', reviewRouter);
-app.use('/api/v1/orders', orderRouter);
-app.use('/api/v1/payments', paymentRouter);
+app.use('/auth', authRouter);
+app.use('/users', userRouter);
+app.use('/products', productRouter);
+app.use('/reviews', reviewRouter);
+app.use('/orders', orderRouter);
+app.use('/payments', paymentRouter);
 
 // errores
 app.use(notFoundMiddleware);
