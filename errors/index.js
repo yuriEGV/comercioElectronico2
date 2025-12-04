@@ -1,12 +1,36 @@
-const CustomAPIError = require('./custom-api');
-const UnauthenticatedError = require('./unauthenticated');
-const NotFoundError = require('./not-found');
-const BadRequestError = require('./bad-request');
-const UnauthorizedError = require('./unauthorized');
-module.exports = {
-  CustomAPIError,
-  UnauthenticatedError,
-  NotFoundError,
-  BadRequestError,
-  UnauthorizedError,
-};
+
+  class UnauthenticatedError extends Error {
+    constructor(message) {
+    super(message);
+    this.name = 'UnauthenticatedError';
+    this.statusCode = 401;
+    }
+    }
+    
+    class UnauthorizedError extends Error {
+    constructor(message) {
+    super(message);
+    this.name = 'UnauthorizedError';
+    this.statusCode = 403;
+    }
+    }
+    
+    class BadRequestError extends Error {
+    constructor(message) {
+    super(message);
+    this.name = 'BadRequestError';
+    this.statusCode = 400;
+    }
+    }
+    
+    class NotFoundError extends Error {
+    constructor(message) {
+    super(message);
+    this.name = 'NotFoundError';
+    this.statusCode = 404;
+    }
+    }
+    
+    // export nombrado para ESModules
+    export { UnauthenticatedError, UnauthorizedError, BadRequestError, NotFoundError };
+    

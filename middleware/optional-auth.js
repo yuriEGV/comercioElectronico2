@@ -1,22 +1,28 @@
-const { isTokenValid } = require('../utils');
+// optional-auth.js (ESM)
 
-const optionalAuthenticateUser = async (req, res, next) => {
-  try {
-    let token = req.signedCookies.token;
-    if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    }
-    if (token) {
-      const { name, userId, role } = isTokenValid({ token });
-      req.user = { name, userId, role };
-    } else {
-      req.user = null;
-    }
-  } catch (e) {
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
+
+export const optionalAuthenticateUser = async (req, res, next) => {
+  const token = req.cookies?.token;
+
+  // Si no hay token → continuar sin usuario
+  if (!token) {
     req.user = null;
-  } finally {
+    return next();
+  }
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Buscar usuario en la base
+    const user = await User.findById(payload.userId).select('-password');
+    req.user = user || null;
+
+    next();
+  } catch (error) {
+    // Token inválido pero la ruta sigue siendo opcional
+    req.user = null;
     next();
   }
 };
-
-module.exports = { optionalAuthenticateUser }; 

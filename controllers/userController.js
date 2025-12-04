@@ -1,84 +1,50 @@
-const User = require('../models/User');
-const { StatusCodes } = require('http-status-codes');
-const CustomError = require('../errors');
-const {
-  createTokenUser,
-  attachCookiesToResponse,
-  checkPermissions,
-} = require('../utils');
+import User from '../models/User.js';
+import { StatusCodes } from 'http-status-codes';
+import { BadRequestError, NotFoundError } from '../errors/index.js';
 
+// Obtener todos los usuarios (solo admin)
 const getAllUsers = async (req, res) => {
-  console.log(req.user);
-  const users = await User.find({ role: 'user' }).select('-password');
-  res.status(StatusCodes.OK).json({ users });
+const users = await User.find({}).select('-password');
+res.status(StatusCodes.OK).json({ users });
 };
 
+// Obtener un usuario por ID
 const getSingleUser = async (req, res) => {
-  const user = await User.findOne({ _id: req.params.id }).select('-password');
-  if (!user) {
-    throw new CustomError.NotFoundError(`No user with id : ${req.params.id}`);
-  }
-  checkPermissions(req.user, user._id);
-  res.status(StatusCodes.OK).json({ user });
+const { id } = req.params;
+const user = await User.findById(id).select('-password');
+if (!user) throw new NotFoundError(`No user with id ${id}`);
+res.status(StatusCodes.OK).json({ user });
 };
 
+// Mostrar el usuario actual
 const showCurrentUser = async (req, res) => {
-  res.status(StatusCodes.OK).json({ user: req.user });
+res.status(StatusCodes.OK).json({ user: req.user });
 };
-// update user with user.save()
+
+// Actualizar información del usuario
 const updateUser = async (req, res) => {
-  const { email, name } = req.body;
-  if (!email || !name) {
-    throw new CustomError.BadRequestError('Please provide all values');
-  }
-  const user = await User.findOne({ _id: req.user.userId });
-
-  user.email = email;
-  user.name = name;
-
-  await user.save();
-
-  const tokenUser = createTokenUser(user);
-  attachCookiesToResponse({ res, user: tokenUser });
-  res.status(StatusCodes.OK).json({ user: tokenUser });
+const { name, email } = req.body;
+const user = await User.findByIdAndUpdate(
+req.user.userId,
+{ name, email },
+{ new: true, runValidators: true }
+);
+res.status(StatusCodes.OK).json({ user });
 };
+
+// Actualizar contraseña del usuario
 const updateUserPassword = async (req, res) => {
-  const { oldPassword, newPassword } = req.body;
-  if (!oldPassword || !newPassword) {
-    throw new CustomError.BadRequestError('Please provide both values');
-  }
-  const user = await User.findOne({ _id: req.user.userId });
+const { oldPassword, newPassword } = req.body;
+const user = await User.findById(req.user.userId);
+if (!user) throw new BadRequestError('User not found');
 
-  const isPasswordCorrect = await user.comparePassword(oldPassword);
-  if (!isPasswordCorrect) {
-    throw new CustomError.UnauthenticatedError('Invalid Credentials');
-  }
-  user.password = newPassword;
+const isPasswordCorrect = await user.comparePassword(oldPassword);
+if (!isPasswordCorrect) throw new BadRequestError('Invalid current password');
 
-  await user.save();
-  res.status(StatusCodes.OK).json({ msg: 'Success! Password Updated.' });
+user.password = newPassword;
+await user.save();
+res.status(StatusCodes.OK).json({ msg: 'Password updated' });
 };
 
-module.exports = {
-  getAllUsers,
-  getSingleUser,
-  showCurrentUser,
-  updateUser,
-  updateUserPassword,
-};
-
-// update user with findOneAndUpdate
-// const updateUser = async (req, res) => {
-//   const { email, name } = req.body;
-//   if (!email || !name) {
-//     throw new CustomError.BadRequestError('Please provide all values');
-//   }
-//   const user = await User.findOneAndUpdate(
-//     { _id: req.user.userId },
-//     { email, name },
-//     { new: true, runValidators: true }
-//   );
-//   const tokenUser = createTokenUser(user);
-//   attachCookiesToResponse({ res, user: tokenUser });
-//   res.status(StatusCodes.OK).json({ user: tokenUser });
-// };
+// export nombrado para ESModules
+export { getAllUsers, getSingleUser, showCurrentUser, updateUser, updateUserPassword };

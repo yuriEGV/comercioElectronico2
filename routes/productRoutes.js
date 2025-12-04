@@ -1,36 +1,24 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
-  authenticateUser,
-  authorizePermissions,
-} = require('../middleware/authentication');
 
-const {
+import {
   createProduct,
   getAllProducts,
   getSingleProduct,
   updateProduct,
   deleteProduct,
-  uploadImage,
-} = require('../controllers/productController');
+  uploadImage
+} from '../controllers/productController.js';
 
-const { getSingleProductReviews } = require('../controllers/reviewController');
-
-router
-  .route('/')
-  .post([authenticateUser, authorizePermissions('admin')], createProduct)
+router.route('/')
+  .post(createProduct)
   .get(getAllProducts);
 
-router
-  .route('/uploadImage')
-  .post([authenticateUser, authorizePermissions('admin')], uploadImage);
-
-router
-  .route('/:id')
+router.route('/:id')
   .get(getSingleProduct)
-  .patch([authenticateUser, authorizePermissions('admin')], updateProduct)
-  .delete([authenticateUser, authorizePermissions('admin')], deleteProduct);
+  .patch(updateProduct)
+  .delete(deleteProduct);
 
-router.route('/:id/reviews').get(getSingleProductReviews);
+router.post('/upload', uploadImage);
 
-module.exports = router;
+export default router;

@@ -1,75 +1,39 @@
-/*const CustomError = require('../errors');
-const { isTokenValid } = require('../utils');
+// middleware/authentication.js (ESM)
 
-const authenticateUser = async (req, res, next) => {
-  const token = req.signedCookies.token;
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
+import { UnauthenticatedError, UnauthorizedError } from '../errors/index.js';
+
+// Middleware para rutas que requieren usuario autenticado
+export const authenticateUser = async (req, res, next) => {
+  const token = req.cookies?.token;
 
   if (!token) {
-    throw new CustomError.UnauthenticatedError('Authentication Invalid');
+    throw new UnauthenticatedError('Authentication Invalid');
   }
 
   try {
-    const { name, userId, role } = isTokenValid({ token });
-    req.user = { name, userId, role };
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(payload.userId).select('-password');
+    if (!user) {
+      throw new UnauthenticatedError('Authentication Invalid');
+    }
+
+    req.user = user;
+
     next();
   } catch (error) {
-    throw new CustomError.UnauthenticatedError('Authentication Invalid');
+    throw new UnauthenticatedError('Authentication Invalid');
   }
 };
 
-const authorizePermissions = (...roles) => {
+// Middleware para verificar roles -> admin, owner, etc
+export const authorizePermissions = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
-      throw new CustomError.UnauthorizedError(
-        'Unauthorized to access this route'
-      );
+      throw new UnauthorizedError('Unauthorized to access this route');
     }
     next();
   };
-};
-
-module.exports = {
-  authenticateUser,
-  authorizePermissions,
-};
-*/
-
-
-const CustomError = require('../errors');
-const { isTokenValid } = require('../utils');
-
-const authenticateUser = async (req, res, next) => {
-  // Intenta obtener el token desde la cookie firmada
-  let token = req.signedCookies.token;
-
-  // Si no hay cookie, intenta obtenerlo desde el header Authorization
-  if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
-  }
-
-  if (!token) {
-    throw new CustomError.UnauthenticatedError('Authentication Invalid');
-  }
-
-  try {
-    const { name, userId, role } = isTokenValid({ token });
-    req.user = { name, userId, role };
-    next();
-  } catch (error) {
-    throw new CustomError.UnauthenticatedError('Authentication Invalid');
-  }
-};
-
-const authorizePermissions = (...roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      throw new CustomError.UnauthorizedError('Unauthorized to access this route');
-    }
-    next();
-  };
-};
-
-module.exports = {
-  authenticateUser,
-  authorizePermissions,
 };

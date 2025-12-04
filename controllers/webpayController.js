@@ -1,73 +1,42 @@
-const {
-  WebpayPlus,
-  Options,
-  IntegrationCommerceCodes,
-  IntegrationApiKeys,
-  Environment,
-} = require('transbank-sdk');
-const Order = require('../models/Order');
+import pkg from 'transbank-sdk';
+const { WebpayPlus, Options, IntegrationApiKeys, Environment } = pkg;
 
-// Configuración para pruebas (modo integración)
-const options = new Options(
-  IntegrationCommerceCodes.WEBPAY_PLUS, // Código de comercio de integración
-  IntegrationApiKeys.WEBPAY,            // API Key de integración
-  Environment.Integration               // Ambiente de integración
-);
-
-// Instancia de transacción
-const tx = new WebpayPlus.Transaction(options);
-
-// Iniciar transacción
-exports.initTransaction = async (req, res) => {
+export const initTransaction = async (req, res) => {
   try {
-    let { amount, orderId } = req.body;
+    const buyOrder = 'order-' + Date.now();
+    const sessionId = 'session-' + Date.now();
+    const amount = 1000;
+    const returnUrl = 'http://localhost:3000/api/payment/commit';
 
-    if (!amount || !orderId)
-      return res.status(400).json({ msg: "amount y orderId son requeridos" });
-
-    // Asegurar que amount sea entero sin decimales para Webpay (pesos chilenos)
-    // Si amount viene con decimales (ej: "1500.00"), se convierte a entero
-    amount = Math.floor(Number(amount));
-
-    const response = await tx.create(
-      orderId.toString(),
-      "sessionId123",
-      amount,
-      process.env.TBK_RETURN_URL || 'http://localhost:3000/success'
+    const tx = new WebpayPlus.Transaction(
+      new Options(IntegrationApiKeys.WEBPAY, Environment.Integration)
     );
 
-    return res.json({
+    const response = await tx.create(buyOrder, sessionId, amount, returnUrl);
+
+    res.json({
       url: response.url,
-      token: response.token
+      token: response.token,
     });
 
-  } catch (error) {
-    console.error("Error creando transacción Webpay:", error);
-    return res.status(500).json({ msg: "Error iniciando transacción" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// Confirmar transacción (cuando Webpay retorna)
-exports.commitTransaction = async (req, res) => {
+export const commitTransaction = async (req, res) => {
   try {
-    const token = req.body.token_ws;
+    const { token_ws } = req.body;
 
-    if (!token)
-      return res.status(400).json({ msg: "token_ws faltante" });
+    const tx = new WebpayPlus.Transaction(
+      new Options(IntegrationApiKeys.WEBPAY, Environment.Integration)
+    );
 
-    const response = await tx.commit(token);
+    const response = await tx.commit(token_ws);
 
-    // Si el pago fue autorizado, actualizamos orden
-    if (response.status === "AUTHORIZED") {
-      await Order.findByIdAndUpdate(response.buy_order, {
-        paymentStatus: "paid"
-      });
-    }
-
-    return res.json(response);
-
-  } catch (error) {
-    console.error("Error confirmando Webpay:", error);
-    return res.status(500).json({ msg: "Error confirmando transacción" });
+    res.json(response);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
   }
 };

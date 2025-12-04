@@ -1,14 +1,15 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
-const { register, login, logout, showMe } = require('../controllers/authController'); // 👈 FALTA showMe
-const authMiddleware = require('../middleware/authentication');
-const { optionalAuthenticateUser } = require('../middleware/optional-auth');
+import { register, login, logout, showMe } from '../controllers/authController.js';
+import { authenticateUser, authorizePermissions } from '../middleware/authentication.js';
+import { optionalAuthenticateUser } from '../middleware/optional-auth.js';
 
+// rutas
 router.post('/register', register);
 router.post('/login', login);
 router.get('/logout', logout);
 router.get('/showMe', optionalAuthenticateUser, showMe);
 
-module.exports = router;
-
+// export default para ESM
+export default router;

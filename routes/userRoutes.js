@@ -1,20 +1,19 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
-  authenticateUser,
-  authorizePermissions,
-} = require('../middleware/authentication');
-const {
-  getAllUsers,
-  getSingleUser,
-  showCurrentUser,
-  updateUser,
-  updateUserPassword,
-} = require('../controllers/userController');
 
+import { authenticateUser, authorizePermissions } from '../middleware/authentication.js';
+import {
+getAllUsers,
+getSingleUser,
+showCurrentUser,
+updateUser,
+updateUserPassword
+} from '../controllers/userController.js';
+
+// rutas usuarios
 router
-  .route('/')
-  .get(authenticateUser, authorizePermissions('admin'), getAllUsers);
+.route('/')
+.get(authenticateUser, authorizePermissions('admin'), getAllUsers);
 
 router.route('/showMe').get(authenticateUser, showCurrentUser);
 router.route('/updateUser').patch(authenticateUser, updateUser);
@@ -22,4 +21,5 @@ router.route('/updateUserPassword').patch(authenticateUser, updateUserPassword);
 
 router.route('/:id').get(authenticateUser, getSingleUser);
 
-module.exports = router;
+// export default para ESM
+export default router;

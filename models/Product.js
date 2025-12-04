@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const ProductSchema = new mongoose.Schema(
   {
@@ -77,8 +77,14 @@ ProductSchema.virtual('reviews', {
   justOne: false,
 });
 
-ProductSchema.pre('remove', async function (next) {
-  await this.model('Review').deleteMany({ product: this._id });
+ProductSchema.pre('findOneAndDelete', async function (next) {
+  const product = await this.model.findOne(this.getFilter());
+  if (product) {
+    await mongoose.model('Review').deleteMany({ product: product._id });
+  }
+  next();
 });
 
-module.exports = mongoose.model('Product', ProductSchema);
+const Product = mongoose.model('Product', ProductSchema);
+
+export default Product;

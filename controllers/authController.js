@@ -1,73 +1,71 @@
-const User = require('../models/User');
-const { StatusCodes } = require('http-status-codes');
-const CustomError = require('../errors');
-const { attachCookiesToResponse, createTokenUser } = require('../utils');
+import User from '../models/User.js';
+import { StatusCodes } from 'http-status-codes';
+import { BadRequestError, UnauthenticatedError } from '../errors/index.js';
+import attachCookies from '../utils/attachCookies.js';
 
+// REGISTER
 const register = async (req, res) => {
-  const { email, name, password } = req.body;
+const { name, email, password } = req.body;
 
-  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-  const normalizedName = typeof name === 'string' ? name.trim() : '';
+if (!name || !email || !password) {
+throw new BadRequestError('Please provide all values');
+}
 
-  const emailAlreadyExists = await User.findOne({ email: normalizedEmail });
-  if (emailAlreadyExists) {
-    throw new CustomError.BadRequestError('Email already exists');
-  }
+const emailAlreadyExists = await User.findOne({ email });
+if (emailAlreadyExists) {
+throw new BadRequestError('Email already exists');
+}
 
-  const isFirstAccount = (await User.countDocuments({})) === 0;
-  const role = isFirstAccount ? 'admin' : 'user';
+const isFirstAccount = (await User.countDocuments()) === 0;
+const role = isFirstAccount ? 'admin' : 'user';
 
-  const user = await User.create({ name: normalizedName, email: normalizedEmail, password, role });
+const user = await User.create({ name, email, password, role });
 
-  const tokenUser = createTokenUser(user);
-  attachCookiesToResponse({ res, user: tokenUser });
+const tokenUser = { userId: user._id, name: user.name, role: user.role };
 
-  res.status(StatusCodes.CREATED).json({ user: tokenUser });
+attachCookies({ res, user: tokenUser });
+
+res.status(StatusCodes.CREATED).json({ user: tokenUser });
 };
 
+// LOGIN
 const login = async (req, res) => {
-  const { email, password } = req.body;
+const { email, password } = req.body;
 
-  if (!email || !password) {
-    throw new CustomError.BadRequestError('Please provide email and password');
-  }
+if (!email || !password) {
+throw new BadRequestError('Please provide all values');
+}
 
-  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+const user = await User.findOne({ email }).select('+password');
+if (!user) {
+throw new UnauthenticatedError('Invalid Credentials');
+}
 
-  const user = await User.findOne({ email: normalizedEmail });
-  if (!user) {
-    throw new CustomError.UnauthenticatedError('Invalid Credentials');
-  }
+const isPasswordCorrect = await user.comparePassword(password);
+if (!isPasswordCorrect) {
+throw new UnauthenticatedError('Invalid Credentials');
+}
 
-  const isPasswordCorrect = await user.comparePassword(password);
-  if (!isPasswordCorrect) {
-    throw new CustomError.UnauthenticatedError('Invalid Credentials');
-  }
+const tokenUser = { userId: user._id, name: user.name, role: user.role };
 
-  const tokenUser = createTokenUser(user);
-  attachCookiesToResponse({ res, user: tokenUser });
+attachCookies({ res, user: tokenUser });
 
-  res.status(StatusCodes.OK).json({ user: tokenUser });
+res.status(StatusCodes.OK).json({ user: tokenUser });
 };
 
+// LOGOUT
 const logout = async (req, res) => {
-  res.cookie('token', 'logout', {
-    httpOnly: true,
-    expires: new Date(Date.now() + 1000),
-    secure: process.env.NODE_ENV === 'production',
-    signed: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  });
-  res.status(StatusCodes.OK).json({ msg: 'user logged out!' });
+res.cookie('token', 'logout', {
+httpOnly: true,
+expires: new Date(Date.now() + 1000),
+});
+res.status(StatusCodes.OK).json({ msg: 'User logged out!' });
 };
 
+// SHOW ME
 const showMe = async (req, res) => {
-  res.status(StatusCodes.OK).json({ user: req.user });
+const user = await User.findById(req.user.userId).select('-password');
+res.status(StatusCodes.OK).json({ user });
 };
 
-module.exports = {
-  register,
-  login,
-  logout,
-  showMe,
-};
+export { register, login, logout, showMe };

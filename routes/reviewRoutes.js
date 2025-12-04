@@ -1,21 +1,24 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { authenticateUser } = require('../middleware/authentication');
 
-const {
-  createReview,
-  getAllReviews,
-  getSingleReview,
-  updateReview,
-  deleteReview,
-} = require('../controllers/reviewController');
+import { authenticateUser } from '../middleware/authentication.js';
+import {
+createReview,
+getAllReviews,
+getSingleReview,
+updateReview,
+deleteReview
+} from '../controllers/reviewController.js';
 
-router.route('/').post(authenticateUser, createReview).get(getAllReviews);
+// rutas reviews
+router.route('/')
+.post(authenticateUser, createReview)
+.get(getAllReviews);
 
-router
-  .route('/:id')
-  .get(getSingleReview)
-  .patch(authenticateUser, updateReview)
-  .delete(authenticateUser, deleteReview);
+router.route('/:id')
+.get(getSingleReview)
+.patch(authenticateUser, updateReview)
+.delete(authenticateUser, deleteReview);
 
-module.exports = router;
+// export default para ESM
+export default router;

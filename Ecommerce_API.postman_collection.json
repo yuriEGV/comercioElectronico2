@@ -1,0 +1,571 @@
+{
+	"info": {
+		"_postman_id": "ecommerce-api-collection",
+		"name": "Ecommerce API - Vercel",
+		"description": "Colección completa de endpoints para probar el ecommerce en producción (Vercel)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Juan Pérez\",\n  \"email\": \"juan@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "register"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"juan@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Show Me (Optional Auth)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/showMe",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "showMe"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "logout"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Show Current User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/showMe",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "showMe"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "USER_ID_AQUI"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Juan Pérez Actualizado\",\n  \"email\": \"juan.nuevo@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/updateUser",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "updateUser"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Password",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"oldPassword\": \"password123\",\n  \"newPassword\": \"nuevapassword456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/updateUserPassword",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "updateUserPassword"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Products",
+			"item": [
+				{
+					"name": "Get All Products",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single Product",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "PRODUCT_ID_AQUI"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Product",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Escritorio Moderno\",\n  \"price\": 29999,\n  \"description\": \"Escritorio elegante y funcional para tu oficina en casa\",\n  \"image\": \"/uploads/example.jpeg\",\n  \"category\": \"office\",\n  \"company\": \"ikea\",\n  \"colors\": [\"#222\", \"#fff\"],\n  \"featured\": true,\n  \"freeShipping\": false,\n  \"inventory\": 50,\n  \"user\": \"USER_ID_AQUI\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/products",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Product",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Escritorio Moderno Actualizado\",\n  \"price\": 34999\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "PRODUCT_ID_AQUI"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Product",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "PRODUCT_ID_AQUI"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Image",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/upload",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", "upload"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Orders",
+			"item": [
+				{
+					"name": "Create Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"items\": [\n    {\n      \"product\": \"PRODUCT_ID_AQUI\",\n      \"amount\": 2\n    }\n  ],\n  \"tax\": 5000,\n  \"shippingFee\": 3000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "orders"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Orders (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "orders"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User Orders",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/showAllMyOrders",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "orders", "showAllMyOrders"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single Order",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "orders", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "ORDER_ID_AQUI"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Order",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"paymentIntentId\": \"pi_1234567890\",\n  \"status\": \"paid\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "orders", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "ORDER_ID_AQUI"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reviews",
+			"item": [
+				{
+					"name": "Get All Reviews",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/reviews",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "reviews"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single Review",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/reviews/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "reviews", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "REVIEW_ID_AQUI"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Review",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"product\": \"PRODUCT_ID_AQUI\",\n  \"rating\": 5,\n  \"title\": \"Excelente producto\",\n  \"comment\": \"Muy satisfecho con la compra, calidad excelente y entrega rápida.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/reviews",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "reviews"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Review",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"rating\": 4,\n  \"title\": \"Buen producto\",\n  \"comment\": \"Actualización de mi review anterior\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/reviews/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "reviews", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "REVIEW_ID_AQUI"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Review",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/reviews/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "reviews", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "REVIEW_ID_AQUI"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Payments",
+			"item": [
+				{
+					"name": "Init Webpay Transaction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/payments/webpay/init",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "payments", "webpay", "init"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Commit Webpay Transaction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token_ws\": \"TOKEN_AQUI\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/payments/webpay/commit",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "payments", "webpay", "commit"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://tu-backend.vercel.app",
+			"type": "string"
+		}
+	]
+}
+

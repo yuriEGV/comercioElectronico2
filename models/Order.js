@@ -1,28 +1,41 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-const ItemSchema = new mongoose.Schema({
-  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-  name: String,
-  price: Number,
-  quantity: Number,
-});
-
-const OrderSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
-  items: [ItemSchema],
-  subtotal: { type: Number, required: true },
-  shipping: { type: Number, default: 0 },
-  total: { type: Number, required: true },
-  currency: { type: String, default: 'clp' }, // o 'usd' según necesites
-  paymentStatus: {
-    type: String,
-    enum: ['pending', 'requires_payment_method', 'processing', 'paid', 'failed'],
-    default: 'pending',
+const SingleOrderItemSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  image: { type: String, required: true },
+  price: { type: Number, required: true },
+  amount: { type: Number, required: true },
+  product: {
+    type: mongoose.Types.ObjectId,
+    ref: 'Product',
+    required: true,
   },
-  paymentIntentId: String, // Stripe PaymentIntent id
-  paymentMethod: String,
-  createdAt: { type: Date, default: Date.now },
-  metadata: { type: Object, default: {} }, // para guardar info extra
 });
 
-module.exports = mongoose.model('Order', OrderSchema);
+const OrderSchema = new mongoose.Schema(
+  {
+    tax: { type: Number, required: true },
+    shippingFee: { type: Number, required: true },
+    subtotal: { type: Number, required: true },
+    total: { type: Number, required: true },
+
+    orderItems: [SingleOrderItemSchema],
+
+    status: {
+      type: String,
+      enum: ['pending', 'failed', 'paid', 'delivered', 'canceled'],
+      default: 'pending',
+    },
+
+    user: {
+      type: mongoose.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
+
+const Order = mongoose.model('Order', OrderSchema);
+
+export default Order;
