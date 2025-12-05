@@ -3,6 +3,7 @@ import connectDB from '../db/connect.js';
 
 let isConnected = false;
 
+// 🔹 Conexión MongoDB serverless
 app.use(async (req, res, next) => {
   if (!isConnected) {
     try {

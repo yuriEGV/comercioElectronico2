@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import 'express-async-errors';
 import express from 'express';
-import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import fileUpload from 'express-fileupload';
 import rateLimiter from 'express-rate-limit';
@@ -24,7 +23,7 @@ import { errorHandlerMiddleware } from './middleware/error-handler.js';
 
 const app = express();
 
-// seguridad
+// 🔹 Seguridad
 app.set('trust proxy', 1);
 app.use(rateLimiter({ windowMs: 15 * 60 * 1000, max: 60 }));
 app.use(helmet());
@@ -32,17 +31,38 @@ app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', cred
 app.use(xss());
 app.use(mongoSanitize());
 
-// ⚠️ Stripe webhook debe ir antes de express.json()
+// 🔹 Stripe Webhook debe ir antes de express.json()
 app.use('/payments/webhook', express.raw({ type: 'application/json' }), paymentRouter);
 
-// middlewares normales
+// 🔹 Middleware normales
 app.use(express.json());
 app.use(cookieParser(process.env.JWT_SECRET));
-app.use(express.static('./public'));
+app.use(express.static('./public')); // archivos estáticos (favicon, imágenes, CSS, etc.)
 app.use(fileUpload());
 
-// rutas
-app.get('/', (req, res) => res.send('Bienvenido a la API de Comercio Electrónico'));
+// 🔹 Middleware de logging para depuración (opcional)
+app.use((req, res, next) => {
+  console.log('Request a:', req.url);
+  next();
+});
+
+// 🔹 Ruta raíz
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <title>API Comercio Electrónico</title>
+      </head>
+      <body>
+        Bienvenido a la API de Comercio Electrónico
+      </body>
+    </html>
+  `);
+});
+
+// 🔹 Rutas API
 app.use('/auth', authRouter);
 app.use('/users', userRouter);
 app.use('/products', productRouter);
@@ -50,7 +70,7 @@ app.use('/reviews', reviewRouter);
 app.use('/orders', orderRouter);
 app.use('/payments', paymentRouter);
 
-// errores
+// 🔹 Middleware de errores
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
