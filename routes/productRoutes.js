@@ -1,6 +1,7 @@
 import express from 'express';
 const router = express.Router();
 
+import { authenticateUser, authorizePermissions } from '../middleware/authentication.js';
 import {
   createProduct,
   getAllProducts,
@@ -11,14 +12,14 @@ import {
 } from '../controllers/productController.js';
 
 router.route('/')
-  .post(createProduct)
+  .post(authenticateUser, authorizePermissions('admin'), createProduct)
   .get(getAllProducts);
 
 router.route('/:id')
   .get(getSingleProduct)
-  .patch(updateProduct)
-  .delete(deleteProduct);
+  .patch(authenticateUser, authorizePermissions('admin'), updateProduct)
+  .delete(authenticateUser, authorizePermissions('admin'), deleteProduct);
 
-router.post('/upload', uploadImage);
+router.post('/upload', authenticateUser, authorizePermissions('admin'), uploadImage);
 
 export default router;

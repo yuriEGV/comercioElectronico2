@@ -8,7 +8,7 @@ import { optionalAuthenticateUser } from '../middleware/optional-auth.js';
 // rutas
 router.post('/register', register);
 router.post('/login', login);
-router.get('/logout', logout);
+router.get('/logout', authenticateUser, logout);
 router.get('/showMe', optionalAuthenticateUser, showMe);
 
 // export default para ESM
