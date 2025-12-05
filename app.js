@@ -77,23 +77,5 @@ app.use('/payments', paymentRouter);
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
-// 🟢 CONEXIÓN A MONGO EN VERCEL (serverless)
-// Solo se ejecuta en Vercel, en desarrollo local server.js maneja la conexión
-let isConnected = false;
-
-app.use(async (req, res, next) => {
-  // Solo conectar en Vercel (cuando no hay servidor HTTP escuchando)
-  if (!isConnected && process.env.VERCEL) {
-    try {
-      await connectDB(process.env.MONGO_URL);
-      isConnected = true;
-      console.log('MongoDB conectado ✔️');
-    } catch (err) {
-      console.error('Error conectando Mongo:', err);
-    }
-  }
-  next();
-});
-
-// 🟢 Exportación REQUERIDA por Vercel (NO usar app.listen)
+// 🟢 Exportación para uso en index.js (desarrollo) y api/index.js (Vercel)
 export default app;
