@@ -23,7 +23,7 @@ import { errorHandlerMiddleware } from './middleware/error-handler.js';
 
 const app = express();
 
-// 🔹 Seguridad
+// 🔹 Seguridad y protección
 app.set('trust proxy', 1);
 app.use(rateLimiter({ windowMs: 15 * 60 * 1000, max: 60 }));
 app.use(helmet());
@@ -31,16 +31,16 @@ app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', cred
 app.use(xss());
 app.use(mongoSanitize());
 
-// 🔹 Stripe Webhook debe ir antes de express.json()
+// 🔹 Stripe Webhook (antes de express.json())
 app.use('/payments/webhook', express.raw({ type: 'application/json' }), paymentRouter);
 
 // 🔹 Middleware normales
 app.use(express.json());
 app.use(cookieParser(process.env.JWT_SECRET));
-app.use(express.static('./public')); // archivos estáticos (favicon, imágenes, CSS, etc.)
+app.use(express.static('./public')); // favicons, imágenes, CSS
 app.use(fileUpload());
 
-// 🔹 Middleware de logging para depuración (opcional)
+// 🔹 Logging opcional para depuración
 app.use((req, res, next) => {
   console.log('Request a:', req.url);
   next();
@@ -70,7 +70,7 @@ app.use('/reviews', reviewRouter);
 app.use('/orders', orderRouter);
 app.use('/payments', paymentRouter);
 
-// 🔹 Middleware de errores
+// 🔹 Middleware de errores (final)
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
