@@ -1,10 +1,11 @@
+// api/index.js
+import 'dotenv/config';
 import app from '../app.js';
 import connectDB from '../db/connect.js';
 
 let isConnected = false;
 
-// 🔹 Conexión MongoDB serverless
-app.use(async (req, res, next) => {
+const handler = async (req, res) => {
   if (!isConnected) {
     try {
       await connectDB(process.env.MONGO_URL);
@@ -12,10 +13,12 @@ app.use(async (req, res, next) => {
       console.log('MongoDB conectado ✔️');
     } catch (err) {
       console.error('Error conectando MongoDB:', err);
-      return res.status(500).send('Error de base de datos');
+      return res.status(500).json({ message: 'Error conectando la base de datos' });
     }
   }
-  next();
-});
 
-export default app;
+  // Delegar request a Express
+  app(req, res);
+};
+
+export default handler;
